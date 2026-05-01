@@ -1,0 +1,66 @@
+% demo of LMS adaptive filtering algorithm
+
+clc; clear;clc;close all
+
+%
+
+fs = 1;
+f0 = 0.02;
+n = 1000;
+t = (0:n-1)'/fs;
+xs = cos(2*pi*f0*t);
+ws = awgn(xs, 12, 'measured');
+
+figure(1);clf;set(gcf,'color','w')
+subplot(311)
+plot(t, xs,'b-','linewidth',1.5);hold on;grid on 
+plot(t, ws,'r--','linewidth',1.5);
+legend('原始信号','加噪信号')
+
+
+
+%  LMS adaptive filtering
+
+M  = 50 ;   % 滤波器的阶数
+xn = ws;
+dn = xs;
+% rho_max = max(eig(ws*ws.'));   % 输入信号相关矩阵的最大特征值
+% mu = (1/rho_max) ;    % 收敛因子 0 < mu < 1/rho
+mu1 = 0.001;
+mu2 = 1;
+delta = 1e-3;
+
+[yn,W,en] = lmsFunc(xn,dn,M,mu1);
+[yn2,W2,en2] = nlmsFunc(xn, dn, M, mu2, delta);
+
+figure(1);
+subplot(312)
+plot(t, xs,'b-','linewidth',1.5);hold on;grid on 
+plot(t, yn,'r--','linewidth',1.5);
+plot(t, yn2,'m-.','linewidth',1.5);
+legend('原始信号','去噪信号','去噪信号2')
+
+
+subplot(313)
+plot(t,en,'r--','linewidth',1.5);hold on;
+plot(t,en2,'m-.','linewidth',1.5);grid on;
+xlim([200 1000])
+[rms(en),rms(en2)]
+
+% 这里可能有同学对期望信号会有疑惑，期望信号都是已知的了，还滤波干嘛？LMS滤波器还有什么用？
+% 
+% 1. LMS滤波器的应用场景比较多，比如在机器学习中，期望确实是已知的，我们希望通过迭代训练出合适的滤波器系数；
+% 2. 在语音信号的线性预测中，将延时后的输入信号作为参考信号 
+% 3. 在自适应回音消除中，期望信号的输入就是回声通道产生的回声。
+% LMS算法的优缺点：
+% 
+% 优点：算法简单，易于实现，算法复杂度低，能够抑制旁瓣效应
+% 缺点
+% 1. 收敛速率较慢，因为LMS滤波器系数更新是逐点的（每来一个新的 
+%  x(n) 和 d(n), 滤波器系数就更新一次）,每一次采样点梯度的估
+% 计对于真实梯度会存在误差，导致滤波器系数的每次更新不会严格按
+% 照真实梯度方向更新，而是有一定的偏差
+% 2. 跟踪性能较差，并且随着滤波器阶数(步长参数)升高，系统的稳定性下降
+% 3. LMS要求不同时刻的输入向量  线性无关——LMS 的独立性假设。如果输入
+% 信号存在相关性，会导致前一次迭代产生的梯度噪声传播到下一次迭代，造
+% 成误差的反复传播，收敛速度变慢，跟踪性能变差。

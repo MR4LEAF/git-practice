@@ -1,0 +1,43 @@
+% demo of fft leakage
+
+clear;clc;close all
+AddPath();
+%%
+
+dt= 0.01;
+N= 109;
+t= make_axis_spatial(N,dt,'101');
+
+Fs= 10;
+
+x= sin(2*pi*Fs*t); 
+
+figure(1);clf
+plot(t,x,'b-');hold on; grid on
+
+
+% frequency domain
+ft= make_axis_freq(N,dt,'101');
+
+% without window
+x_fft= FT3d(x,'fft');
+x_fft_abs= abs(x_fft).';
+
+figure(10);clf
+plot(ft,x_fft_abs,'b-');hold on; grid on
+
+% with hanning window
+hann_t= hann(N);% hann_t= circshift(hann_t,-N/2);
+x_windowed= x.*hann_t;
+figure(1);
+plot(t,x_windowed,'r--');hold on; grid on
+
+
+
+x_fft= FT3d(x_windowed,'fft');
+x_fft_abs= abs(x_fft).';
+
+figure(10);
+plot(ft,x_fft_abs,'r--');
+
+xlim([-15 15])
